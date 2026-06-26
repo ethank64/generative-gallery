@@ -79,13 +79,30 @@
         .loading { display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--anthropic-mid-gray); padding: 80px 0; }
         @media (max-width: 600px) { .container { flex-direction: column; } .sidebar { width: 100%; } .canvas-area { padding: 20px; } }
     </style>
+    <link rel="stylesheet" href="../_viewer.css">
 </head>
 <body>
-    <div class="container">
-        <div class="sidebar">
-            <a href="../../index.html" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--anthropic-mid-gray);text-decoration:none;margin-bottom:14px;">← Gallery</a>
+    <div id="canvas-container">
+        <div class="loading">Growing…</div>
+    </div>
+
+    <a class="viewer-back" href="../../index.html">← Gallery</a>
+    <button class="viewer-gear" onclick="openSettings()" aria-label="Open settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+
+    <div class="modal-backdrop" id="settings-modal" onclick="backdropClose(event)">
+      <div class="modal-panel">
+        <div class="modal-header">
+          <div>
             <h1>Differential Growth</h1>
-            <div class="subtitle">A single thread that grows, repels itself, and buckles into coral — the tension between expansion and overcrowding, resolved as folds.</div>
+            <div class="subtitle">A single thread that grows, repels itself, and buckles into coral.</div>
+          </div>
+          <button class="modal-close" onclick="closeSettings()" aria-label="Close settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="modal-content">
 
             <div class="control-section">
                 <h3>Seed</h3>
@@ -198,12 +215,7 @@
                 </div>
             </div>
         </div>
-
-        <div class="canvas-area">
-            <div id="canvas-container">
-                <div class="loading">Growing…</div>
-            </div>
-        </div>
+      </div>
     </div>
 
     <script>
@@ -281,7 +293,7 @@
             buildPalette();
 
             cx = width / 2; cy = height / 2;
-            BR = width * 0.455;
+            BR = Math.min(width, height) * 0.45;
 
             loops = [];
             const b = params.blobs;
@@ -490,13 +502,24 @@
         // P5 LIFECYCLE
         // ═══════════════════════════════════════════════════════════════════════
         function setup() {
-            const canvas = createCanvas(1200, 1200);
+            const canvas = createCanvas(windowWidth, windowHeight);
             canvas.parent('canvas-container');
             pixelDensity(1);
             const l = document.querySelector('.loading');
             if (l) l.style.display = 'none';
             initSystem();
         }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+            initSystem();
+        }
+
+        // Settings modal
+        function openSettings() { document.getElementById('settings-modal').classList.add('open'); }
+        function closeSettings() { document.getElementById('settings-modal').classList.remove('open'); }
+        function backdropClose(e) { if (e.target === document.getElementById('settings-modal')) closeSettings(); }
+        window.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSettings(); });
 
         function draw() {
             if (done) return;

@@ -35,7 +35,8 @@ src/
   styles/gallery.css         # dark-gallery styling
 public/
   works/
-    aeolian-drift/index.html # a fully self-contained interactive p5.js viewer
+    _viewer.css              # shared chrome for every piece: full-screen canvas + gear-modal
+    aeolian-drift/index.html # a self-contained p5.js viewer (links _viewer.css for its chrome)
 .github/workflows/deploy.yml # builds with Astro and deploys to GitHub Pages on every push
 ```
 

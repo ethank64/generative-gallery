@@ -1,0 +1,93 @@
+/*
+  Shared chrome for the full-screen p5.js piece viewers.
+  Each piece links this AFTER its own inline <style>, so these rules win and
+  recolor the controls for a dark, gallery-style modal. The art fills the
+  window; settings live behind a gear icon in the top-right.
+*/
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  background: #0b0d1a;
+  color: #f3f1ea;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow: hidden;
+}
+
+/* Full-bleed canvas */
+#canvas-container {
+  position: fixed; inset: 0;
+  width: 100vw; height: 100vh; max-width: none;
+  background: #0b0d1a; overflow: hidden;
+  border-radius: 0; box-shadow: none;
+}
+#canvas-container canvas { display: block; width: 100vw !important; height: 100vh !important; }
+.loading { display: flex; align-items: center; justify-content: center; height: 100vh; color: #6b6976; font-size: 16px; }
+
+/* Top-corner controls */
+.viewer-back, .viewer-gear {
+  position: fixed; top: 18px; z-index: 30;
+  display: inline-flex; align-items: center; gap: 7px;
+  background: rgba(12, 14, 22, 0.55); color: #e7e4dc;
+  border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 999px;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  cursor: pointer; text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.viewer-back { left: 18px; padding: 9px 16px; font-size: 13px; }
+.viewer-gear { right: 18px; width: 42px; height: 42px; justify-content: center; padding: 0; }
+.viewer-back:hover, .viewer-gear:hover { background: rgba(20, 23, 34, 0.85); border-color: rgba(255, 255, 255, 0.3); }
+.viewer-gear svg { width: 20px; height: 20px; }
+
+/* Settings modal */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 40;
+  background: rgba(6, 7, 12, 0.5);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  display: none; align-items: flex-start; justify-content: flex-end; padding: 18px;
+}
+.modal-backdrop.open { display: flex; }
+.modal-panel {
+  width: 360px; max-width: calc(100vw - 36px); max-height: calc(100vh - 36px);
+  overflow-y: auto; background: #13151f;
+  border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px;
+  padding: 22px 22px 26px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+.modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+.modal-header h1 { font-family: 'Lora', serif; font-size: 22px; font-weight: 500; color: #f6f4ee; margin: 0 0 6px; }
+.modal-header .subtitle { font-size: 13px; line-height: 1.5; color: #9b99a6; margin: 0; }
+.modal-close { flex-shrink: 0; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #cfcdd6; cursor: pointer; }
+.modal-close:hover { background: rgba(255, 255, 255, 0.12); }
+
+/* Controls (override the old light-theme rules) */
+.control-section { margin-bottom: 26px; }
+.control-section h3 { font-size: 12px; font-weight: 600; color: #e7e4dc; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.09em; }
+.control-section h3::before { content: '•'; color: #c76b8e; font-weight: bold; }
+.control-group { margin-bottom: 16px; }
+.control-group label { display: block; font-size: 13px; font-weight: 500; color: #cfcdd6; margin-bottom: 8px; }
+.slider-container { display: flex; align-items: center; gap: 12px; }
+.slider-container input[type="range"] { flex: 1; height: 4px; -webkit-appearance: none; appearance: none; background: rgba(255, 255, 255, 0.14); border-radius: 2px; outline: none; }
+.slider-container input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #c76b8e; cursor: pointer; transition: transform 0.15s ease; }
+.slider-container input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.12); }
+.slider-container input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border: none; border-radius: 50%; background: #c76b8e; cursor: pointer; }
+.value-display { font-family: 'Courier New', monospace; font-size: 12px; color: #8e8c99; min-width: 54px; text-align: right; }
+.seed-input { width: 100%; background: #0b0d1a; color: #f3f1ea; padding: 11px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 14px; margin-bottom: 10px; border: 1px solid rgba(255, 255, 255, 0.12); text-align: center; }
+.seed-input:focus { outline: none; border-color: #c76b8e; box-shadow: 0 0 0 2px rgba(199, 107, 142, 0.18); }
+.seed-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.color-group { margin-bottom: 14px; }
+.color-group label { display: block; font-size: 12px; color: #9b99a6; margin-bottom: 4px; }
+.color-picker-container { display: flex; align-items: center; gap: 8px; }
+.color-picker-container input[type="color"] { width: 30px; height: 30px; border: none; border-radius: 6px; cursor: pointer; background: none; padding: 0; }
+.color-value { font-family: 'Courier New', monospace; font-size: 12px; color: #8e8c99; }
+
+/* Buttons (unified dark) */
+.button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; color: #f3f1ea; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.12); transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease; }
+.button:hover { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.28); transform: none; }
+.button:active { transform: scale(0.98); }
+.button.secondary, .button.tertiary { background: rgba(255, 255, 255, 0.05); }
+.button.secondary:hover, .button.tertiary:hover { background: rgba(255, 255, 255, 0.12); }
+.regen-button { margin-bottom: 0; }
+.button-row { display: flex; gap: 8px; }
+.button-row .button { flex: 1; }
+.button + .button-row, .button-row + .button { margin-top: 8px; }
+
+@media (max-width: 560px) { .modal-panel { width: 100%; } .modal-backdrop { justify-content: center; } }
