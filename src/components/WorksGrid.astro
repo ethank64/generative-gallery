@@ -1,0 +1,109 @@
+---
+import { works } from '../data/works.js';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const link = (p) => `${base}/${p.replace(/^\//, '')}`;
+
+const featured = works.find((w) => w.featured && w.status !== 'soon')
+              || works.find((w) => w.status !== 'soon')
+              || works[0];
+const gridWorks = works.filter((w) => w !== featured);
+
+const CAT_LABELS = { flow: 'Flow fields', particles: 'Particles', tess: 'Tessellation', harmonic: 'Harmonic' };
+const catLabel = (c) => CAT_LABELS[c] || (c.charAt(0).toUpperCase() + c.slice(1));
+const cats = [];
+works.forEach((w) => { if (w.category && !cats.includes(w.category)) cats.push(w.category); });
+
+const published = works.filter((w) => w.status !== 'soon').length;
+---
+<section class="hero">
+  <h1>Generative<br />gallery</h1>
+  <p>Each piece is a living p5.js sketch you can run, reseed, and reshape in the browser.</p>
+  <div class="stats">
+    <span>{published} {published === 1 ? 'work' : 'works'}</span>
+    <span class="sep">·</span>
+    <span>p5.js · seeded &amp; reproducible</span>
+  </div>
+</section>
+
+<main id="works">
+  {featured && (
+    <a class="featured" href={link(featured.path)} data-cat={featured.category}>
+      <div class="thumb">
+        {featured.thumb
+          ? <img src={link(featured.thumb)} alt={featured.title} />
+          : <canvas data-kind={featured.kind} data-seed={featured.id} width="1080" height="405"></canvas>}
+        {featured.live && (
+          <span class="badge"><span aria-hidden="true">▶</span> Featured · live</span>
+        )}
+        <div class="overlay">
+          <div>
+            <div class="ftitle">{featured.title}</div>
+            <div class="fmeta">{[featured.medium, featured.year].filter(Boolean).join(' · ')}</div>
+          </div>
+          <span class="open">Open piece <span aria-hidden="true">→</span></span>
+        </div>
+      </div>
+    </a>
+  )}
+
+  <div class="section-label">
+    <h2>Works</h2>
+    <span class="count">{gridWorks.length} {gridWorks.length === 1 ? 'piece' : 'pieces'}</span>
+  </div>
+
+  <div class="chips">
+    <button class="chip on" type="button" data-chip="all">All</button>
+    {cats.map((c) => <button class="chip" type="button" data-chip={c}>{catLabel(c)}</button>)}
+  </div>
+
+  <div class="grid">
+    {gridWorks.map((w) => {
+      const isSoon = w.status === 'soon';
+      const Tag = isSoon ? 'div' : 'a';
+      return (
+        <Tag class={`card ${isSoon ? 'soon' : 'link'}`} data-cat={w.category} {...(isSoon ? {} : { href: link(w.path) })}>
+          <div class="thumb">
+            {w.thumb
+              ? <img src={link(w.thumb)} alt={w.title} />
+              : <canvas data-kind={w.kind} data-seed={w.id} width="480" height="320"></canvas>}
+            {isSoon ? (
+              <span class="soon-badge">In progress</span>
+            ) : (
+              <>
+                {w.live && <span class="live-badge"><span aria-hidden="true">▶</span> live</span>}
+                <span class="hint">Open <span aria-hidden="true">↗</span></span>
+              </>
+            )}
+          </div>
+          <div class="body">
+            <div class="ctitle">{w.title}</div>
+            <div class="cmeta">{[w.medium, w.year].filter(Boolean).join(' · ')}</div>
+            {w.tags && w.tags.length > 0 && (
+              <div class="tags">{w.tags.map((t) => <span class="tag">{t}</span>)}</div>
+            )}
+          </div>
+        </Tag>
+      );
+    })}
+  </div>
+</main>
+
+<script>
+  import { renderThumb } from '../lib/thumbs.js';
+
+  document.querySelectorAll('canvas[data-kind]').forEach((cv) => {
+    renderThumb(cv, cv.getAttribute('data-kind'), cv.getAttribute('data-seed'));
+  });
+
+  const chips = Array.from(document.querySelectorAll('[data-chip]'));
+  chips.forEach((ch) => {
+    ch.addEventListener('click', () => {
+      const cat = ch.getAttribute('data-chip');
+      chips.forEach((x) => x.classList.toggle('on', x === ch));
+      document.querySelectorAll('.grid [data-cat], .featured[data-cat]').forEach((el) => {
+        el.style.display = cat === 'all' || el.getAttribute('data-cat') === cat ? '' : 'none';
+      });
+    });
+  });
+</script>

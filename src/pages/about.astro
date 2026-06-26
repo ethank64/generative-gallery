@@ -1,0 +1,42 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const link = (p) => `${base}/${p.replace(/^\//, '')}`;
+---
+<Layout
+  title="About — Ethan Knotts"
+  description="Why I built a p5.js generative art gallery — from learning to code with The Coding Train to a generative-art skill in Claude Code."
+>
+  <section class="hero">
+    <h1>About</h1>
+  </section>
+
+  <main class="prose">
+    <p class="lead">
+      I started programming when I was about 14, and p5.js is where it all clicked.
+    </p>
+
+    <p>
+      When I first started learning to code, I remember binge-watching Daniel Shiffman's tutorials and
+      coding challenges on <a href="https://www.youtube.com/@TheCodingTrain">The Coding Train</a>. His
+      boundless enthusiasm turned abstract ideas into something fun and made the intimidating parts
+      feel within reach.
+    </p>
+
+    <p>
+      Recently I came across a generative-art skill in Claude Code that builds with p5.js, and it
+      brought all of those memories back. It's what inspired this project: a digital art gallery to
+      show the beauty and power of the <a href="https://p5js.org">p5.js</a> library — the same library
+      that taught me to program.
+    </p>
+
+    <p>
+      Every piece here runs live in the browser. Change a seed, pull a sketch apart, and make it your
+      own. And if you're just starting out, go watch
+      <a href="https://www.youtube.com/@TheCodingTrain">The Coding Train</a> — thanks, Dan.
+    </p>
+
+    <a class="cta" href={link('#works')}>Browse the art <span aria-hidden="true">→</span></a>
+  </main>
+</Layout>

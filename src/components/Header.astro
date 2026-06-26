@@ -1,0 +1,14 @@
+---
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const link = (p) => `${base}/${p.replace(/^\//, '')}`;
+---
+<header class="topbar">
+  <a class="brand" href={link('')}>
+    <span class="name">ETHAN&nbsp;KNOTTS</span>
+  </a>
+  <nav class="nav">
+    <a href={link('#works')}>Works</a>
+    <a href={link('about/')}>About</a>
+    <a href="https://github.com/ethank64/generative-gallery">GitHub <span aria-hidden="true">↗</span></a>
+  </nav>
+</header>
