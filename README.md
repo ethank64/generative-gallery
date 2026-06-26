@@ -23,6 +23,7 @@ them in [`works/works.js`](works/works.js) as you publish real pieces.
 
 ```
 index.html              # the gallery home
+about.html              # the story behind the project
 assets/
   gallery.css           # dark-gallery styling
   gallery.js            # renders the featured banner, filter chips, and grid from the manifest
