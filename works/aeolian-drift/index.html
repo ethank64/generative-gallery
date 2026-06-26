@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<!--
+    AEOLIAN DRIFT — built on the Anthropic algorithmic-art viewer template.
+    Fixed: layout, branding, fonts, seed controls, action buttons.
+    Variable: the p5.js algorithm, parameters, and parameter controls.
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aeolian Drift — Generative Art</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* Anthropic Brand Colors */
+        :root {
+            --anthropic-dark: #141413;
+            --anthropic-light: #faf9f5;
+            --anthropic-mid-gray: #b0aea5;
+            --anthropic-light-gray: #e8e6dc;
+            --anthropic-orange: #d97757;
+            --anthropic-blue: #6a9bcc;
+            --anthropic-green: #788c5d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--anthropic-light) 0%, #f5f3ee 100%);
+            min-height: 100vh;
+            color: var(--anthropic-dark);
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(20, 20, 19, 0.1);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar h1 {
+            font-family: 'Lora', serif;
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--anthropic-dark);
+            margin-bottom: 8px;
+        }
+
+        .sidebar .subtitle {
+            color: var(--anthropic-mid-gray);
+            font-size: 14px;
+            margin-bottom: 32px;
+            line-height: 1.4;
+        }
+
+        /* Control Sections */
+        .control-section {
+            margin-bottom: 32px;
+        }
+
+        .control-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--anthropic-dark);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-section h3::before {
+            content: '•';
+            color: var(--anthropic-orange);
+            font-weight: bold;
+        }
+
+        /* Seed Controls */
+        .seed-input {
+            width: 100%;
+            background: var(--anthropic-light);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-bottom: 12px;
+            border: 1px solid var(--anthropic-light-gray);
+            text-align: center;
+        }
+
+        .seed-input:focus {
+            outline: none;
+            border-color: var(--anthropic-orange);
+            box-shadow: 0 0 0 2px rgba(217, 119, 87, 0.1);
+            background: white;
+        }
+
+        .seed-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .regen-button {
+            margin-bottom: 0;
+        }
+
+        /* Parameter Controls */
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--anthropic-dark);
+            margin-bottom: 8px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+            height: 4px;
+            background: var(--anthropic-light-gray);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--anthropic-orange);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .slider-container input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            background: #c86641;
+        }
+
+        .slider-container input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--anthropic-orange);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .value-display {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+            min-width: 60px;
+            text-align: right;
+        }
+
+        /* Color Pickers */
+        .color-group {
+            margin-bottom: 16px;
+        }
+
+        .color-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+            margin-bottom: 4px;
+        }
+
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .color-picker-container input[type="color"] {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: none;
+            padding: 0;
+        }
+
+        .color-value {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+        }
+
+        /* Buttons */
+        .button {
+            background: var(--anthropic-orange);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .button:hover {
+            background: #c86641;
+            transform: translateY(-1px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button.secondary {
+            background: var(--anthropic-blue);
+        }
+
+        .button.secondary:hover {
+            background: #5a8bb8;
+        }
+
+        .button.tertiary {
+            background: var(--anthropic-green);
+        }
+
+        .button.tertiary:hover {
+            background: #6b7b52;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .button-row .button {
+            flex: 1;
+        }
+
+        .button + .button-row,
+        .button-row + .button {
+            margin-top: 8px;
+        }
+
+        /* Canvas Area */
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+        }
+
+        #canvas-container {
+            width: 100%;
+            max-width: 1000px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(20, 20, 19, 0.1);
+            background: #0b0d1a;
+        }
+
+        #canvas-container canvas {
+            display: block;
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--anthropic-mid-gray);
+            padding: 80px 0;
+        }
+
+        /* Responsive - Stack on mobile */
+        @media (max-width: 600px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            .canvas-area {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Control Sidebar -->
+        <div class="sidebar">
+            <!-- Headers -->
+            <a href="../../index.html" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--anthropic-mid-gray);text-decoration:none;margin-bottom:14px;">← Gallery</a>
+            <h1>Aeolian Drift</h1>
+            <div class="subtitle">Wind made visible — slender filaments surrendering to a divergence-free harmonic field. Each seed is a different day's weather over the same invisible landscape.</div>
+
+            <!-- Seed Section (FIXED) -->
+            <div class="control-section">
+                <h3>Seed</h3>
+                <input type="number" id="seed-input" class="seed-input" value="12345" onchange="updateSeed()">
+                <div class="seed-controls">
+                    <button class="button secondary" onclick="previousSeed()">← Prev</button>
+                    <button class="button secondary" onclick="nextSeed()">Next →</button>
+                </div>
+                <button class="button tertiary regen-button" onclick="randomSeedAndUpdate()">↻ Random</button>
+            </div>
+
+            <!-- Parameters Section -->
+            <div class="control-section">
+                <h3>Parameters</h3>
+
+                <!-- Strand Density -->
+                <div class="control-group">
+                    <label>Strand Density</label>
+                    <div class="slider-container">
+                        <input type="range" id="strandCount" min="400" max="5000" step="100" value="2000" oninput="updateParam('strandCount', this.value)">
+                        <span class="value-display" id="strandCount-value">2000</span>
+                    </div>
+                </div>
+
+                <!-- Harmonic Octaves -->
+                <div class="control-group">
+                    <label>Harmonic Octaves</label>
+                    <div class="slider-container">
+                        <input type="range" id="octaves" min="1" max="8" step="1" value="5" oninput="updateParam('octaves', this.value)">
+                        <span class="value-display" id="octaves-value">5</span>
+                    </div>
+                </div>
+
+                <!-- Fundamental Scale -->
+                <div class="control-group">
+                    <label>Fundamental Scale</label>
+                    <div class="slider-container">
+                        <input type="range" id="scale" min="0.0006" max="0.0030" step="0.0001" value="0.0015" oninput="updateParam('scale', this.value)">
+                        <span class="value-display" id="scale-value">0.0015</span>
+                    </div>
+                </div>
+
+                <!-- Domain Warp -->
+                <div class="control-group">
+                    <label>Domain Warp</label>
+                    <div class="slider-container">
+                        <input type="range" id="warp" min="0" max="3" step="0.1" value="1.5" oninput="updateParam('warp', this.value)">
+                        <span class="value-display" id="warp-value">1.5</span>
+                    </div>
+                </div>
+
+                <!-- Strand Length -->
+                <div class="control-group">
+                    <label>Strand Length</label>
+                    <div class="slider-container">
+                        <input type="range" id="strandLength" min="60" max="500" step="20" value="280" oninput="updateParam('strandLength', this.value)">
+                        <span class="value-display" id="strandLength-value">280</span>
+                    </div>
+                </div>
+
+                <!-- Filament Weight -->
+                <div class="control-group">
+                    <label>Filament Weight</label>
+                    <div class="slider-container">
+                        <input type="range" id="lineWeight" min="0.3" max="3" step="0.1" value="1.0" oninput="updateParam('lineWeight', this.value)">
+                        <span class="value-display" id="lineWeight-value">1.0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Motion Section -->
+            <div class="control-section">
+                <h3>Motion</h3>
+                <button class="button" id="live-toggle" onclick="toggleLive()">▶ Animate (Live)</button>
+
+                <div class="control-group" style="margin-top:16px;">
+                    <label>Flow Speed</label>
+                    <div class="slider-container">
+                        <input type="range" id="liveSpeed" min="0.2" max="3" step="0.1" value="1.0" oninput="updateLiveParam('liveSpeed', this.value)">
+                        <span class="value-display" id="liveSpeed-value">1.0</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Trail Persistence</label>
+                    <div class="slider-container">
+                        <input type="range" id="trail" min="0" max="1" step="0.05" value="0.7" oninput="updateLiveParam('trail', this.value)">
+                        <span class="value-display" id="trail-value">0.7</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Colors Section -->
+            <div class="control-section">
+                <h3>Colors</h3>
+
+                <div class="color-group">
+                    <label>Night (background)</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="bg" value="#0b0d1a" onchange="updateColor('bg', this.value)">
+                        <span class="color-value" id="bg-value">#0b0d1a</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <label>Voice I (low current)</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color1" value="#2f9e8f" onchange="updateColor('color1', this.value)">
+                        <span class="color-value" id="color1-value">#2f9e8f</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <label>Voice II (mid current)</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color2" value="#e0b15e" onchange="updateColor('color2', this.value)">
+                        <span class="color-value" id="color2-value">#e0b15e</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <label>Voice III (high current)</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color3" value="#c76b8e" onchange="updateColor('color3', this.value)">
+                        <span class="color-value" id="color3-value">#c76b8e</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Section (FIXED) -->
+            <div class="control-section">
+                <h3>Actions</h3>
+                <button class="button" onclick="regenerate()">↻ Regenerate</button>
+                <div class="button-row">
+                    <button class="button secondary" onclick="resetParameters()">Reset</button>
+                    <button class="button tertiary" onclick="downloadPNG()">Download PNG</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Canvas Area -->
+        <div class="canvas-area">
+            <div id="canvas-container">
+                <div class="loading">Tuning the wind…</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════════════
+        // AEOLIAN DRIFT — PARAMETERS
+        // ═══════════════════════════════════════════════════════════════════════
+
+        let params = {
+            seed: 12345,
+            strandCount: 2000,
+            octaves: 5,
+            scale: 0.0015,
+            warp: 1.5,
+            strandLength: 280,
+            lineWeight: 1.0,
+            live: false,        // false = still accumulation, true = animated particles
+            liveSpeed: 1.0,     // particle velocity multiplier (live only)
+            trail: 0.7,         // trail persistence 0..1 (live only)
+            bg: '#0b0d1a',
+            colorPalette: ['#2f9e8f', '#e0b15e', '#c76b8e']
+        };
+
+        let defaultParams = JSON.parse(JSON.stringify(params)); // deep copy for reset
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // THE FIELD — domain-warped FBM tuned to the harmonic series, made
+        // divergence-free by taking its curl. Precomputed on a grid for speed,
+        // then sampled bilinearly during streamline integration.
+        // ═══════════════════════════════════════════════════════════════════════
+
+        const FRES = 7;                 // field grid resolution (px per cell)
+        let fcols, frows;
+        let fieldDir, fieldMag, fieldPot, fieldTone;
+        let maxMag = 1;
+        let tmin = 0, tmax = 1;          // tone range, normalized so the palette fills the canvas
+
+        // FBM whose partials follow the harmonic series: partial n sits at
+        // frequency n·f0 with amplitude 1/n — the spectrum of a vibrating string.
+        function harmonicFbm(x, y, z) {
+            let sum = 0, ampSum = 0;
+            const oct = params.octaves;
+            for (let n = 1; n <= oct; n++) {
+                const amp = 1 / n;
+                sum += amp * noise(x * n, y * n, z + n * 13.73);
+                ampSum += amp;
+            }
+            return sum / ampSum; // ~[0,1]
+        }
+
+        // Inigo-Quilez-style domain warping: fold the coordinate space through
+        // two successive noise displacements before reading the final potential.
+        function warpedPotential(px, py) {
+            const s = params.scale;
+            const w = params.warp;
+            const x = px * s, y = py * s;
+
+            const q1 = harmonicFbm(x,        y,        0.0);
+            const q2 = harmonicFbm(x + 5.2,  y + 1.3,  21.0);
+
+            const wx = x + w * (q1 - 0.5);
+            const wy = y + w * (q2 - 0.5);
+
+            const r1 = harmonicFbm(wx + 1.7, wy + 9.2, 43.0);
+            const r2 = harmonicFbm(wx + 8.3, wy + 2.8, 67.0);
+
+            const nx = wx + w * (r1 - 0.5);
+            const ny = wy + w * (r2 - 0.5);
+
+            return harmonicFbm(nx, ny, 89.0); // scalar potential [0,1]
+        }
+
+        // Curl of the potential → divergence-free flow (air that never piles up).
+        function curlRaw(x, y) {
+            const e = FRES * 0.85;
+            const pY1 = warpedPotential(x, y + e);
+            const pY0 = warpedPotential(x, y - e);
+            const pX1 = warpedPotential(x + e, y);
+            const pX0 = warpedPotential(x - e, y);
+            const vx = (pY1 - pY0);   //  ∂P/∂y
+            const vy = -(pX1 - pX0);  // -∂P/∂x
+            const mag = Math.sqrt(vx * vx + vy * vy);
+            if (mag < 1e-12) return { dx: 0, dy: 0, mag: 0 };
+            return { dx: vx / mag, dy: vy / mag, mag: mag };
+        }
+
+        function buildField() {
+            fcols = Math.ceil(width / FRES) + 1;
+            frows = Math.ceil(height / FRES) + 1;
+            fieldDir = new Float32Array(fcols * frows * 2);
+            fieldMag = new Float32Array(fcols * frows);
+            fieldPot = new Float32Array(fcols * frows);
+            fieldTone = new Float32Array(fcols * frows);
+            maxMag = 1e-9;
+            tmin = Infinity; tmax = -Infinity;
+            const tf = params.scale * 0.5;   // broad tonal regions span the canvas
+            for (let j = 0; j < frows; j++) {
+                for (let i = 0; i < fcols; i++) {
+                    const x = i * FRES, y = j * FRES;
+                    const c = curlRaw(x, y);
+                    const idx = j * fcols + i;
+                    fieldDir[idx * 2]     = c.dx;
+                    fieldDir[idx * 2 + 1] = c.dy;
+                    fieldMag[idx]         = c.mag;
+                    fieldPot[idx]         = warpedPotential(x, y);
+                    if (c.mag > maxMag) maxMag = c.mag;
+                    const tn = 0.62 * noise(x * tf, y * tf, 500.0)
+                             + 0.38 * noise(x * tf * 2.1, y * tf * 2.1, 900.0);
+                    fieldTone[idx] = tn;
+                    if (tn < tmin) tmin = tn;
+                    if (tn > tmax) tmax = tn;
+                }
+            }
+            if (tmax - tmin < 1e-6) tmax = tmin + 1e-6;
+        }
+
+        function bilerp(a, b, c, d, fx, fy) {
+            return a * (1 - fx) * (1 - fy) + b * fx * (1 - fy)
+                 + c * (1 - fx) * fy       + d * fx * fy;
+        }
+
+        function sampleField(x, y) {
+            let gx = x / FRES, gy = y / FRES;
+            if (gx < 0) gx = 0; if (gy < 0) gy = 0;
+            if (gx > fcols - 1.001) gx = fcols - 1.001;
+            if (gy > frows - 1.001) gy = frows - 1.001;
+            const i = Math.floor(gx), j = Math.floor(gy);
+            const fx = gx - i, fy = gy - j;
+            const i00 = j * fcols + i, i10 = i00 + 1;
+            const i01 = i00 + fcols,  i11 = i01 + 1;
+            const dx = bilerp(fieldDir[i00*2],   fieldDir[i10*2],   fieldDir[i01*2],   fieldDir[i11*2],   fx, fy);
+            const dy = bilerp(fieldDir[i00*2+1], fieldDir[i10*2+1], fieldDir[i01*2+1], fieldDir[i11*2+1], fx, fy);
+            const mg = bilerp(fieldMag[i00], fieldMag[i10], fieldMag[i01], fieldMag[i11], fx, fy);
+            const m = Math.sqrt(dx * dx + dy * dy);
+            if (m < 1e-9) return { dx: 0, dy: 0, mag: 0 };
+            return { dx: dx / m, dy: dy / m, mag: mg };
+        }
+
+        function samplePot(x, y) {
+            let i = Math.round(x / FRES), j = Math.round(y / FRES);
+            if (i < 0) i = 0; if (j < 0) j = 0;
+            if (i > fcols - 1) i = fcols - 1;
+            if (j > frows - 1) j = frows - 1;
+            return fieldPot[j * fcols + i];
+        }
+
+        // Tonal position for colour, normalized to the field's true range so the
+        // whole palette (teal → rose → gold) is expressed across the canvas.
+        function sampleTone(x, y) {
+            let i = Math.round(x / FRES), j = Math.round(y / FRES);
+            if (i < 0) i = 0; if (j < 0) j = 0;
+            if (i > fcols - 1) i = fcols - 1;
+            if (j > frows - 1) j = frows - 1;
+            return (fieldTone[j * fcols + i] - tmin) / (tmax - tmin);
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // PALETTE — color is earned by motion, never applied. Hue read from the
+        // field's potential, brightness lifted toward a warm highlight by speed.
+        // ═══════════════════════════════════════════════════════════════════════
+
+        let pStops, highlightCol;
+        let pStopsRGB, highlightRGB;   // numeric copies for allocation-free live rendering
+
+        function buildPalette() {
+            // teal → rose → gold sweep (Voice I → III → II), the natural-minor dusk
+            pStops = [
+                color(params.colorPalette[0]),
+                color(params.colorPalette[2]),
+                color(params.colorPalette[1])
+            ];
+            highlightCol = color(253, 246, 230); // warm near-white: a string mid-vibration
+            pStopsRGB = pStops.map(function (c) { return [red(c), green(c), blue(c)]; });
+            highlightRGB = [253, 246, 230];
+        }
+
+        // Fast palette lookup returning [r,g,b] — no p5.Color allocation per particle.
+        function paletteRGB(t) {
+            t = t < 0 ? 0 : (t > 1 ? 1 : t);
+            const n = pStopsRGB.length - 1;
+            const seg = t * n;
+            let i = Math.floor(seg);
+            if (i >= n) i = n - 1;
+            const f = seg - i;
+            const a = pStopsRGB[i], b = pStopsRGB[i + 1];
+            return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
+        }
+
+        function paletteColor(t) {
+            t = t < 0 ? 0 : (t > 1 ? 1 : t);
+            const n = pStops.length - 1;
+            const seg = t * n;
+            let i = Math.floor(seg);
+            if (i >= n) i = n - 1;
+            const f = seg - i;
+            return lerpColor(pStops[i], pStops[i + 1], f);
+        }
+
+        function smoothstep(a, b, x) {
+            let t = (x - a) / (b - a);
+            t = t < 0 ? 0 : (t > 1 ? 1 : t);
+            return t * t * (3 - 2 * t);
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // SEEDING — importance sampling: filaments fall thickly where the current
+        // runs strong, sparsely where the air pools into stillness.
+        // ═══════════════════════════════════════════════════════════════════════
+
+        let strokeList = [];
+        let renderIndex = 0;
+        let done = false;
+        let spawnPool = [];      // importance-sampled birth points, reused by live mode
+
+        function buildSeeds() {
+            strokeList = [];
+            const cx = width / 2, cy = height / 2;
+            const biasPow = 1.5;
+
+            // Main luminous filaments
+            const seeds = [];
+            let attempts = 0;
+            const maxAttempts = params.strandCount * 120;
+            while (seeds.length < params.strandCount && attempts < maxAttempts) {
+                attempts++;
+                const x = random(width), y = random(height);
+                const m = sampleField(x, y).mag / maxMag;
+                const dx = (x - cx) / (width / 2);
+                const dy = (y - cy) / (height / 2);
+                const r = Math.sqrt(dx * dx + dy * dy);
+                const edge = 1 - smoothstep(0.82, 1.28, r);   // ease seeds away from corners
+                const prob = (Math.pow(m, biasPow) * 0.94 + 0.045) * edge;
+                if (random() < prob) seeds.push({ x: x, y: y, haze: false });
+            }
+
+            // Atmospheric haze — broad, faint sweeps drawn behind the threads
+            const hazeCount = Math.floor(params.strandCount * 0.16);
+            const haze = [];
+            attempts = 0;
+            while (haze.length < hazeCount && attempts < hazeCount * 60) {
+                attempts++;
+                const x = random(width), y = random(height);
+                const dx = (x - cx) / (width / 2);
+                const dy = (y - cy) / (height / 2);
+                const r = Math.sqrt(dx * dx + dy * dy);
+                const edge = 1 - smoothstep(0.7, 1.3, r);
+                if (random() < 0.55 * edge) haze.push({ x: x, y: y, haze: true });
+            }
+
+            strokeList = haze.concat(seeds); // haze first (behind), threads on top
+            spawnPool = seeds;               // live particles are born where the current runs strong
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // STREAMLINES — integrate both directions from each seed so the filament
+        // is centered on it; lay down a translucent trace tapered like the
+        // envelope of a plucked note (silent attack, full sustain, fading release).
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function renderStrand(s) {
+            const isHaze = s.haze;
+            const steps = Math.floor(params.strandLength * (isHaze ? random(1.2, 2.0) : random(0.7, 1.15)));
+            const half = Math.floor(steps / 2);
+            const stepLen = isHaze ? random(2.2, 3.4) : random(1.2, 1.9);
+
+            const pts = [];
+            // backward
+            let x = s.x, y = s.y;
+            for (let i = 0; i < half; i++) {
+                const c = sampleField(x, y);
+                if (c.mag === 0) break;
+                x -= c.dx * stepLen; y -= c.dy * stepLen;
+                if (x < -30 || x > width + 30 || y < -30 || y > height + 30) break;
+                pts.unshift({ x: x, y: y, m: c.mag });
+            }
+            pts.push({ x: s.x, y: s.y, m: sampleField(s.x, s.y).mag });
+            // forward
+            x = s.x; y = s.y;
+            for (let i = 0; i < half; i++) {
+                const c = sampleField(x, y);
+                if (c.mag === 0) break;
+                x += c.dx * stepLen; y += c.dy * stepLen;
+                if (x < -30 || x > width + 30 || y < -30 || y > height + 30) break;
+                pts.push({ x: x, y: y, m: c.mag });
+            }
+            const n = pts.length;
+            if (n < 2) return;
+
+            // Per-strand colour position from the broad tone field (coherent threads)
+            let toneT = sampleTone(s.x, s.y) + random(-0.05, 0.05);
+            const baseCol = paletteColor(toneT);
+
+            const envPow = isHaze ? 0.85 : 0.7;
+            const wScale = isHaze ? random(6, 13) : params.lineWeight * random(0.7, 1.35);
+            const aBase = isHaze ? 0.045 : 0.085;
+
+            blendMode(isHaze ? BLEND : ADD);
+
+            for (let i = 0; i < n - 1; i++) {
+                const t = i / (n - 1);
+                const env = Math.pow(Math.sin(Math.PI * t), envPow);
+                const lm = Math.min(1, pts[i].m / maxMag);
+
+                let col;
+                if (isHaze) {
+                    col = color(red(baseCol), green(baseCol), blue(baseCol), 255 * aBase * env);
+                    strokeWeight(wScale * env + 1.5);
+                } else {
+                    const lit = lerpColor(baseCol, highlightCol, Math.min(0.9, Math.pow(lm, 1.3) * 0.95));
+                    col = color(red(lit), green(lit), blue(lit), 255 * aBase * env * (0.45 + 0.85 * lm));
+                    strokeWeight(wScale * env + 0.15);
+                }
+                stroke(col);
+                line(pts[i].x, pts[i].y, pts[i + 1].x, pts[i + 1].y);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // LIVE MODE — the same field, now flowing. Thousands of particles ride the
+        // curl, leaving fading trails so luminous pulses travel along the currents.
+        // Color is read from the tone they pass through; brightness from their speed.
+        // ═══════════════════════════════════════════════════════════════════════
+
+        let liveParticles = [];
+
+        function spawnParticle(stagger) {
+            let x, y;
+            if (spawnPool.length) {
+                const s = spawnPool[Math.floor(random(spawnPool.length))];
+                x = s.x + random(-7, 7);
+                y = s.y + random(-7, 7);
+            } else {
+                x = random(width); y = random(height);
+            }
+            const maxLife = Math.floor(random(70, 240));
+            return {
+                x: x, y: y, px: x, py: y,
+                maxLife: maxLife,
+                life: stagger ? Math.floor(random(0, maxLife)) : 0
+            };
+        }
+
+        function initLive() {
+            liveParticles = [];
+            const count = Math.min(params.strandCount, 4000);
+            for (let i = 0; i < count; i++) liveParticles.push(spawnParticle(true));
+        }
+
+        function drawLive() {
+            // Fade the previous frame toward the night — longer trails at higher persistence.
+            blendMode(BLEND);
+            noStroke();
+            const bg = color(params.bg);
+            const fade = 30 - 26 * params.trail;
+            fill(red(bg), green(bg), blue(bg), fade);
+            rect(0, 0, width, height);
+
+            // Advance and draw the particles as glowing trail segments.
+            blendMode(ADD);
+            const speed = 1.7 * params.liveSpeed;
+            for (let i = 0; i < liveParticles.length; i++) {
+                const p = liveParticles[i];
+                const c = sampleField(p.x, p.y);
+                if (c.mag === 0) { liveParticles[i] = spawnParticle(false); continue; }
+
+                p.px = p.x; p.py = p.y;
+                p.x += c.dx * speed;
+                p.y += c.dy * speed;
+                p.life++;
+
+                const env = Math.sin(Math.PI * Math.min(1, p.life / p.maxLife)); // fade in/out
+                const lm = Math.min(1, c.mag / maxMag);
+                const base = paletteRGB(sampleTone(p.x, p.y));
+                const k = Math.min(0.9, Math.pow(lm, 1.3) * 0.95);
+                const r = base[0] + (highlightRGB[0] - base[0]) * k;
+                const g = base[1] + (highlightRGB[1] - base[1]) * k;
+                const b = base[2] + (highlightRGB[2] - base[2]) * k;
+                const a = 255 * (0.28 + 0.55 * lm) * env;
+
+                stroke(r, g, b, a);
+                strokeWeight(params.lineWeight * (0.7 + 1.4 * lm) * (0.5 + 0.7 * env));
+                line(p.px, p.py, p.x, p.y);
+
+                if (p.life >= p.maxLife ||
+                    p.x < -20 || p.x > width + 20 || p.y < -20 || p.y > height + 20) {
+                    liveParticles[i] = spawnParticle(false);
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // BACKGROUND & VIGNETTE — deep indigo lifted at the centre, darkening to
+        // near-black at the edges to focus the eye and give the air its depth.
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function rgba(c, a) {
+            return 'rgba(' + Math.floor(red(c)) + ',' + Math.floor(green(c)) + ',' + Math.floor(blue(c)) + ',' + a + ')';
+        }
+
+        function paintBackground() {
+            blendMode(BLEND);
+            const bg = color(params.bg);
+            const lift = color(
+                Math.min(255, red(bg) + 20),
+                Math.min(255, green(bg) + 23),
+                Math.min(255, blue(bg) + 34)
+            );
+            const cx = width * 0.5, cy = height * 0.42;
+            const g = drawingContext.createRadialGradient(cx, cy, 0, cx, cy, width * 0.92);
+            g.addColorStop(0, rgba(lift, 1));
+            g.addColorStop(1, rgba(bg, 1));
+            drawingContext.fillStyle = g;
+            drawingContext.fillRect(0, 0, width, height);
+        }
+
+        function paintVignette() {
+            blendMode(BLEND);
+            const bg = color(params.bg);
+            const dark = color(
+                Math.max(0, red(bg) - 8),
+                Math.max(0, green(bg) - 8),
+                Math.max(0, blue(bg) - 6)
+            );
+            const cx = width * 0.5, cy = height * 0.46;
+            const g = drawingContext.createRadialGradient(cx, cy, width * 0.32, cx, cy, width * 0.80);
+            g.addColorStop(0, rgba(dark, 0));
+            g.addColorStop(1, rgba(dark, 0.6));
+            drawingContext.fillStyle = g;
+            drawingContext.fillRect(0, 0, width, height);
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // P5 LIFECYCLE
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function setup() {
+            const canvas = createCanvas(1200, 1200);
+            canvas.parent('canvas-container');
+            pixelDensity(1);
+            const l = document.querySelector('.loading');
+            if (l) l.style.display = 'none';
+            initializeSystem();
+        }
+
+        function initializeSystem() {
+            randomSeed(params.seed);
+            noiseSeed(params.seed);
+
+            buildPalette();
+            buildField();
+            buildSeeds();
+
+            paintBackground();
+
+            if (params.live) {
+                initLive();
+            } else {
+                renderIndex = 0;
+                done = false;
+            }
+            loop();
+        }
+
+        function draw() {
+            if (params.live) { drawLive(); return; }
+
+            if (done) return;
+            const batch = Math.max(8, Math.floor(strokeList.length / 75));
+            for (let k = 0; k < batch && renderIndex < strokeList.length; k++) {
+                renderStrand(strokeList[renderIndex]);
+                renderIndex++;
+            }
+            if (renderIndex >= strokeList.length) {
+                paintVignette();
+                blendMode(BLEND);
+                done = true;
+                noLoop();
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // UI CONTROL HANDLERS
+        // ═══════════════════════════════════════════════════════════════════════
+
+        const INT_PARAMS = ['strandCount', 'octaves', 'strandLength'];
+
+        function updateParam(name, value) {
+            params[name] = INT_PARAMS.indexOf(name) >= 0 ? parseInt(value) : parseFloat(value);
+            document.getElementById(name + '-value').textContent = value;
+            initializeSystem();
+        }
+
+        function updateColor(id, value) {
+            document.getElementById(id + '-value').textContent = value;
+            if (id === 'bg') {
+                params.bg = value;
+            } else {
+                const idx = { color1: 0, color2: 1, color3: 2 }[id];
+                params.colorPalette[idx] = value;
+            }
+            initializeSystem();
+        }
+
+        // Live-only params apply continuously — no re-init, so the animation never stutters.
+        function updateLiveParam(name, value) {
+            params[name] = parseFloat(value);
+            document.getElementById(name + '-value').textContent = value;
+        }
+
+        function setLiveButton() {
+            const btn = document.getElementById('live-toggle');
+            btn.textContent = params.live ? '⏸ Freeze (Still)' : '▶ Animate (Live)';
+            btn.classList.toggle('secondary', params.live);
+        }
+
+        function toggleLive() {
+            params.live = !params.live;
+            setLiveButton();
+            initializeSystem();
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // SEED CONTROLS (FIXED)
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function updateSeedDisplay() {
+            document.getElementById('seed-input').value = params.seed;
+        }
+
+        function updateSeed() {
+            const input = document.getElementById('seed-input');
+            const newSeed = parseInt(input.value);
+            if (newSeed && newSeed > 0) {
+                params.seed = newSeed;
+                initializeSystem();
+            } else {
+                updateSeedDisplay();
+            }
+        }
+
+        function previousSeed() {
+            params.seed = Math.max(1, params.seed - 1);
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        function nextSeed() {
+            params.seed = params.seed + 1;
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        function randomSeedAndUpdate() {
+            params.seed = Math.floor(Math.random() * 999999) + 1;
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // ACTIONS (FIXED)
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function regenerate() {
+            initializeSystem();
+        }
+
+        function downloadPNG() {
+            saveCanvas('aeolian-drift-' + params.seed, 'png');
+        }
+
+        function resetParameters() {
+            params = JSON.parse(JSON.stringify(defaultParams));
+
+            document.getElementById('strandCount').value = params.strandCount;
+            document.getElementById('strandCount-value').textContent = params.strandCount;
+            document.getElementById('octaves').value = params.octaves;
+            document.getElementById('octaves-value').textContent = params.octaves;
+            document.getElementById('scale').value = params.scale;
+            document.getElementById('scale-value').textContent = params.scale;
+            document.getElementById('warp').value = params.warp;
+            document.getElementById('warp-value').textContent = params.warp;
+            document.getElementById('strandLength').value = params.strandLength;
+            document.getElementById('strandLength-value').textContent = params.strandLength;
+            document.getElementById('lineWeight').value = params.lineWeight;
+            document.getElementById('lineWeight-value').textContent = params.lineWeight;
+
+            document.getElementById('liveSpeed').value = params.liveSpeed;
+            document.getElementById('liveSpeed-value').textContent = params.liveSpeed;
+            document.getElementById('trail').value = params.trail;
+            document.getElementById('trail-value').textContent = params.trail;
+            setLiveButton();
+
+            document.getElementById('bg').value = params.bg;
+            document.getElementById('bg-value').textContent = params.bg;
+            document.getElementById('color1').value = params.colorPalette[0];
+            document.getElementById('color1-value').textContent = params.colorPalette[0];
+            document.getElementById('color2').value = params.colorPalette[1];
+            document.getElementById('color2-value').textContent = params.colorPalette[1];
+            document.getElementById('color3').value = params.colorPalette[2];
+            document.getElementById('color3-value').textContent = params.colorPalette[2];
+
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        window.addEventListener('load', function () {
+            updateSeedDisplay();
+        });
+    </script>
+</body>
+</html>
