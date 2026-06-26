@@ -96,8 +96,31 @@ function latt(c, w, h, pal, rnd) {
   }
   c.globalCompositeOperation = 'source-over';
 }
+function growth(c, w, h, pal, rnd) {
+  c.globalCompositeOperation = 'lighter';
+  for (var s = 0; s < 6; s++) {
+    var x = rnd() * w, y = rnd() * h, ang = rnd() * 7;
+    var col = pal[Math.floor(rnd() * pal.length)];
+    c.strokeStyle = hexA(col, 0.4 + rnd() * 0.2);
+    c.lineWidth = 1.1;
+    c.beginPath(); c.moveTo(x, y);
+    for (var i = 0; i < 420; i++) {
+      ang += field(x * 0.02, y * 0.02) * 1.1 + (rnd() - 0.5) * 0.6;
+      x += Math.cos(ang) * 3; y += Math.sin(ang) * 3;
+      if (x < 4 || x > w - 4 || y < 4 || y > h - 4) {
+        ang += Math.PI;
+        x = Math.max(4, Math.min(w - 4, x));
+        y = Math.max(4, Math.min(h - 4, y));
+      }
+      c.lineTo(x, y);
+    }
+    c.stroke();
+  }
+  c.globalCompositeOperation = 'source-over';
+}
 const KINDS = {
   flow:      function (c, w, h, r) { streams(c, w, h, PAL.dusk, r, { n: Math.round(w * 0.5), len: 30, turns: 2.4 }); },
+  growth:    function (c, w, h, r) { growth(c, w, h, PAL.dusk, r); },
   ember:     function (c, w, h, r) { streams(c, w, h, PAL.ember, r, { n: 260, len: 30, turns: 2.0 }); },
   tide:      function (c, w, h, r) { streams(c, w, h, PAL.tide, r, { n: 240, len: 36, turns: 1.2, flat: true, step: 2.6 }); },
   particles: function (c, w, h, r) { parts(c, w, h, PAL.dusk, r); },

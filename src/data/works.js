@@ -42,5 +42,17 @@ export const works = [
     featured: true,
     live: true,
     blurb: 'Wind made visible — thousands of filaments surrendering to a divergence-free harmonic field. Reseed it, or set it flowing.'
+  },
+  {
+    id: 'differential-growth',
+    title: 'Differential Growth',
+    year: 2026,
+    medium: 'Organic growth',
+    category: 'growth',
+    tags: ['p5.js', 'differential growth', 'self-repulsion'],
+    path: 'works/differential-growth/index.html',
+    kind: 'growth',
+    live: true,
+    blurb: 'A single thread that grows, repels itself, and buckles into coral — expansion and overcrowding resolved as folds.'
   }
 ];

@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<!--
+    DIFFERENTIAL GROWTH — a self-contained p5.js viewer for the gallery.
+    Same chrome/branding as the other pieces; the algorithm is its own.
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Differential Growth — Generative Art</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --anthropic-dark: #141413;
+            --anthropic-light: #faf9f5;
+            --anthropic-mid-gray: #b0aea5;
+            --anthropic-light-gray: #e8e6dc;
+            --anthropic-orange: #d97757;
+            --anthropic-blue: #6a9bcc;
+            --anthropic-green: #788c5d;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--anthropic-light) 0%, #f5f3ee 100%);
+            min-height: 100vh;
+            color: var(--anthropic-dark);
+        }
+        .container { display: flex; min-height: 100vh; padding: 20px; gap: 20px; }
+        .sidebar {
+            width: 320px; flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            padding: 24px; border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(20, 20, 19, 0.1);
+            overflow-y: auto; overflow-x: hidden;
+        }
+        .sidebar h1 { font-family: 'Lora', serif; font-size: 24px; font-weight: 500; margin-bottom: 8px; }
+        .sidebar .subtitle { color: var(--anthropic-mid-gray); font-size: 14px; margin-bottom: 32px; line-height: 1.4; }
+        .control-section { margin-bottom: 32px; }
+        .control-section h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .control-section h3::before { content: '•'; color: var(--anthropic-orange); font-weight: bold; }
+        .seed-input {
+            width: 100%; background: var(--anthropic-light); padding: 12px; border-radius: 8px;
+            font-family: 'Courier New', monospace; font-size: 14px; margin-bottom: 12px;
+            border: 1px solid var(--anthropic-light-gray); text-align: center;
+        }
+        .seed-input:focus { outline: none; border-color: var(--anthropic-orange); box-shadow: 0 0 0 2px rgba(217, 119, 87, 0.1); background: white; }
+        .seed-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+        .regen-button { margin-bottom: 0; }
+        .control-group { margin-bottom: 20px; }
+        .control-group label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+        .slider-container { display: flex; align-items: center; gap: 12px; }
+        .slider-container input[type="range"] { flex: 1; height: 4px; background: var(--anthropic-light-gray); border-radius: 2px; outline: none; -webkit-appearance: none; }
+        .slider-container input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: var(--anthropic-orange); border-radius: 50%; cursor: pointer; transition: all 0.2s ease; }
+        .slider-container input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.1); background: #c86641; }
+        .slider-container input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: var(--anthropic-orange); border-radius: 50%; border: none; cursor: pointer; }
+        .value-display { font-family: 'Courier New', monospace; font-size: 12px; color: var(--anthropic-mid-gray); min-width: 60px; text-align: right; }
+        .color-group { margin-bottom: 16px; }
+        .color-group label { display: block; font-size: 12px; color: var(--anthropic-mid-gray); margin-bottom: 4px; }
+        .color-picker-container { display: flex; align-items: center; gap: 8px; }
+        .color-picker-container input[type="color"] { width: 32px; height: 32px; border: none; border-radius: 6px; cursor: pointer; background: none; padding: 0; }
+        .color-value { font-family: 'Courier New', monospace; font-size: 12px; color: var(--anthropic-mid-gray); }
+        .button { background: var(--anthropic-orange); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; width: 100%; }
+        .button:hover { background: #c86641; transform: translateY(-1px); }
+        .button:active { transform: translateY(0); }
+        .button.secondary { background: var(--anthropic-blue); }
+        .button.secondary:hover { background: #5a8bb8; }
+        .button.tertiary { background: var(--anthropic-green); }
+        .button.tertiary:hover { background: #6b7b52; }
+        .button-row { display: flex; gap: 8px; }
+        .button-row .button { flex: 1; }
+        .button + .button-row, .button-row + .button { margin-top: 8px; }
+        .canvas-area { flex: 1; display: flex; align-items: center; justify-content: center; min-width: 0; }
+        #canvas-container { width: 100%; max-width: 1000px; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 40px rgba(20, 20, 19, 0.1); background: #0b0d1a; }
+        #canvas-container canvas { display: block; width: 100% !important; height: auto !important; }
+        .loading { display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--anthropic-mid-gray); padding: 80px 0; }
+        @media (max-width: 600px) { .container { flex-direction: column; } .sidebar { width: 100%; } .canvas-area { padding: 20px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <a href="../../index.html" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--anthropic-mid-gray);text-decoration:none;margin-bottom:14px;">← Gallery</a>
+            <h1>Differential Growth</h1>
+            <div class="subtitle">A single thread that grows, repels itself, and buckles into coral — the tension between expansion and overcrowding, resolved as folds.</div>
+
+            <div class="control-section">
+                <h3>Seed</h3>
+                <input type="number" id="seed-input" class="seed-input" value="12345" onchange="updateSeed()">
+                <div class="seed-controls">
+                    <button class="button secondary" onclick="previousSeed()">← Prev</button>
+                    <button class="button secondary" onclick="nextSeed()">Next →</button>
+                </div>
+                <button class="button tertiary regen-button" onclick="randomSeedAndUpdate()">↻ Random</button>
+            </div>
+
+            <div class="control-section">
+                <h3>Parameters</h3>
+
+                <div class="control-group">
+                    <label>Max Nodes</label>
+                    <div class="slider-container">
+                        <input type="range" id="maxNodes" min="500" max="9000" step="100" value="7000" oninput="updateParam('maxNodes', this.value)">
+                        <span class="value-display" id="maxNodes-value">7000</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Fold Spacing</label>
+                    <div class="slider-container">
+                        <input type="range" id="repRadius" min="6" max="24" step="1" value="13" oninput="updateParam('repRadius', this.value)">
+                        <span class="value-display" id="repRadius-value">13</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Attraction</label>
+                    <div class="slider-container">
+                        <input type="range" id="attraction" min="0.02" max="0.5" step="0.01" value="0.16" oninput="updateParam('attraction', this.value)">
+                        <span class="value-display" id="attraction-value">0.16</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Repulsion</label>
+                    <div class="slider-container">
+                        <input type="range" id="repulsion" min="0.05" max="1" step="0.01" value="0.45" oninput="updateParam('repulsion', this.value)">
+                        <span class="value-display" id="repulsion-value">0.45</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Smoothing</label>
+                    <div class="slider-container">
+                        <input type="range" id="smoothing" min="0" max="0.5" step="0.01" value="0.12" oninput="updateParam('smoothing', this.value)">
+                        <span class="value-display" id="smoothing-value">0.12</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Starting Blobs</label>
+                    <div class="slider-container">
+                        <input type="range" id="blobs" min="1" max="5" step="1" value="1" oninput="updateParam('blobs', this.value)">
+                        <span class="value-display" id="blobs-value">1</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Line Weight</label>
+                    <div class="slider-container">
+                        <input type="range" id="lineWeight" min="0.5" max="3" step="0.1" value="1.3" oninput="updateParam('lineWeight', this.value)">
+                        <span class="value-display" id="lineWeight-value">1.3</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Colors</h3>
+                <div class="color-group">
+                    <label>Night (background)</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="bg" value="#0b0d1a" onchange="updateColor('bg', this.value)">
+                        <span class="color-value" id="bg-value">#0b0d1a</span>
+                    </div>
+                </div>
+                <div class="color-group">
+                    <label>Voice I</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color1" value="#2f9e8f" onchange="updateColor('color1', this.value)">
+                        <span class="color-value" id="color1-value">#2f9e8f</span>
+                    </div>
+                </div>
+                <div class="color-group">
+                    <label>Voice II</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color2" value="#e0b15e" onchange="updateColor('color2', this.value)">
+                        <span class="color-value" id="color2-value">#e0b15e</span>
+                    </div>
+                </div>
+                <div class="color-group">
+                    <label>Voice III</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color3" value="#c76b8e" onchange="updateColor('color3', this.value)">
+                        <span class="color-value" id="color3-value">#c76b8e</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Actions</h3>
+                <button class="button" onclick="regenerate()">↻ Regenerate</button>
+                <div class="button-row">
+                    <button class="button secondary" onclick="resetParameters()">Reset</button>
+                    <button class="button tertiary" onclick="downloadPNG()">Download PNG</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-area">
+            <div id="canvas-container">
+                <div class="loading">Growing…</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════════════
+        // DIFFERENTIAL GROWTH — PARAMETERS
+        // ═══════════════════════════════════════════════════════════════════════
+        let params = {
+            seed: 12345,
+            maxNodes: 7000,
+            repRadius: 13,
+            attraction: 0.16,
+            repulsion: 0.45,
+            smoothing: 0.12,
+            blobs: 1,
+            lineWeight: 1.3,
+            bg: '#0b0d1a',
+            colorPalette: ['#2f9e8f', '#e0b15e', '#c76b8e']
+        };
+        let defaultParams = JSON.parse(JSON.stringify(params));
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // PALETTE — colour read from position along the thread, lifted toward a
+        // warm highlight where the fold turns tightest.
+        // ═══════════════════════════════════════════════════════════════════════
+        let pStops, highlightCol;
+        function buildPalette() {
+            // cyclic teal → rose → gold → teal so the closed loop has no seam
+            const c1 = color(params.colorPalette[0]);
+            const c2 = color(params.colorPalette[1]);
+            const c3 = color(params.colorPalette[2]);
+            pStops = [c1, c3, c2, c1];
+            highlightCol = color(253, 246, 230);
+        }
+        function paletteColor(t) {
+            t = t < 0 ? 0 : (t > 1 ? 1 : t);
+            const n = pStops.length - 1;
+            const seg = t * n;
+            let i = Math.floor(seg);
+            if (i >= n) i = n - 1;
+            return lerpColor(pStops[i], pStops[i + 1], seg - i);
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // THE SYSTEM
+        // ═══════════════════════════════════════════════════════════════════════
+        let loops = [];
+        let done = false;
+        let settle = 0;
+        let cx, cy, BR;
+
+        function maxEdge() { return params.repRadius * 0.8; }
+        function minEdge() { return params.repRadius * 0.12; }
+        function restLen() { return params.repRadius * 0.5; }
+        const GROWTH_RATE = 0.035;
+
+        function totalNodes() {
+            let n = 0;
+            for (let i = 0; i < loops.length; i++) n += loops[i].length;
+            return n;
+        }
+
+        function makeLoop(ox, oy, r) {
+            const n = Math.max(16, Math.floor((2 * Math.PI * r) / maxEdge()));
+            const loop = [];
+            for (let i = 0; i < n; i++) {
+                const a = (i / n) * Math.PI * 2;
+                loop.push({ x: ox + Math.cos(a) * r, y: oy + Math.sin(a) * r });
+            }
+            return loop;
+        }
+
+        function initSystem() {
+            randomSeed(params.seed);
+            noiseSeed(params.seed);
+            buildPalette();
+
+            cx = width / 2; cy = height / 2;
+            BR = width * 0.455;
+
+            loops = [];
+            const b = params.blobs;
+            if (b === 1) {
+                loops.push(makeLoop(cx, cy, 30));
+            } else {
+                const spread = width * 0.13;
+                for (let k = 0; k < b; k++) {
+                    const a = (k / b) * Math.PI * 2 + random(-0.3, 0.3);
+                    loops.push(makeLoop(cx + Math.cos(a) * spread, cy + Math.sin(a) * spread, 22));
+                }
+            }
+
+            done = false;
+            settle = 0;
+            paintBackground();
+            loop();
+        }
+
+        // One relaxation step: attraction + smoothing pull together, repulsion
+        // pushes non-adjacent nodes apart. A spatial hash keeps it fast.
+        function relax() {
+            const rep = params.repRadius;
+            const cell = rep;
+            const grid = new Map();
+            for (let li = 0; li < loops.length; li++) {
+                const lp = loops[li];
+                for (let i = 0; i < lp.length; i++) {
+                    const nd = lp[i];
+                    nd._li = li; nd._i = i;
+                    const key = Math.floor(nd.x / cell) + ',' + Math.floor(nd.y / cell);
+                    let bucket = grid.get(key);
+                    if (!bucket) { bucket = []; grid.set(key, bucket); }
+                    bucket.push(nd);
+                }
+            }
+
+            const att = params.attraction, smo = params.smoothing, rpw = params.repulsion;
+            for (let li = 0; li < loops.length; li++) {
+                const lp = loops[li];
+                const L = lp.length;
+                for (let i = 0; i < L; i++) {
+                    const p = lp[i];
+                    const a = lp[(i - 1 + L) % L];
+                    const b = lp[(i + 1) % L];
+                    const rest = restLen();
+                    // springs to neighbours at rest length (hold spacing, don't collapse)
+                    let dxa = a.x - p.x, dya = a.y - p.y;
+                    let da = Math.sqrt(dxa * dxa + dya * dya) || 1;
+                    let ka = ((da - rest) / da) * att;
+                    let dxb = b.x - p.x, dyb = b.y - p.y;
+                    let db = Math.sqrt(dxb * dxb + dyb * dyb) || 1;
+                    let kb = ((db - rest) / db) * att;
+                    let fx = dxa * ka + dxb * kb;
+                    let fy = dya * ka + dyb * kb;
+                    // light smoothing toward the midpoint
+                    fx += ((a.x + b.x) / 2 - p.x) * smo;
+                    fy += ((a.y + b.y) / 2 - p.y) * smo;
+
+                    const gx = Math.floor(p.x / cell), gy = Math.floor(p.y / cell);
+                    for (let ox = -1; ox <= 1; ox++) {
+                        for (let oy = -1; oy <= 1; oy++) {
+                            const bucket = grid.get((gx + ox) + ',' + (gy + oy));
+                            if (!bucket) continue;
+                            for (let k = 0; k < bucket.length; k++) {
+                                const o = bucket[k];
+                                if (o === p) continue;
+                                if (o._li === li && (o._i === (i - 1 + L) % L || o._i === (i + 1) % L)) continue;
+                                const dx = p.x - o.x, dy = p.y - o.y;
+                                const d2 = dx * dx + dy * dy;
+                                if (d2 < rep * rep && d2 > 1e-6) {
+                                    const d = Math.sqrt(d2);
+                                    const f = (1 - d / rep) * rpw;
+                                    fx += (dx / d) * f; fy += (dy / d) * f;
+                                }
+                            }
+                        }
+                    }
+                    p._fx = fx; p._fy = fy;
+                }
+            }
+
+            const maxF = rep * 0.6;
+            for (let li = 0; li < loops.length; li++) {
+                const lp = loops[li];
+                for (let i = 0; i < lp.length; i++) {
+                    const p = lp[i];
+                    let m = Math.sqrt(p._fx * p._fx + p._fy * p._fy);
+                    if (m > maxF) { p._fx *= maxF / m; p._fy *= maxF / m; }
+                    p.x += p._fx; p.y += p._fy;
+                    const dx = p.x - cx, dy = p.y - cy;
+                    const r = Math.sqrt(dx * dx + dy * dy);
+                    if (r > BR) { p.x = cx + (dx / r) * BR; p.y = cy + (dy / r) * BR; }
+                }
+            }
+        }
+
+        // Resample: split long edges (growth), drop edges that got too short.
+        function resample(loop, canSplit) {
+            const mx = maxEdge(), mn = minEdge();
+            const out = [];
+            let injected = 0;
+            for (let i = 0; i < loop.length; i++) {
+                const a = loop[i], b = loop[(i + 1) % loop.length];
+                out.push(a);
+                if (canSplit) {
+                    const dx = b.x - a.x, dy = b.y - a.y;
+                    const d = Math.sqrt(dx * dx + dy * dy) || 1;
+                    // grow by injecting nodes — on stretched edges, and a steady
+                    // random trickle everywhere so the thread keeps lengthening.
+                    if (d > mx || random() < GROWTH_RATE) {
+                        const nx = -dy / d, ny = dx / d;
+                        const j = random(-0.45, 0.45);
+                        out.push({ x: (a.x + b.x) / 2 + nx * j, y: (a.y + b.y) / 2 + ny * j });
+                        injected++;
+                    }
+                }
+            }
+            const merged = [out[0]];
+            for (let i = 1; i < out.length; i++) {
+                const q = merged[merged.length - 1];
+                const dx = out[i].x - q.x, dy = out[i].y - q.y;
+                if (dx * dx + dy * dy > mn * mn) merged.push(out[i]);
+            }
+            return { loop: merged.length >= 4 ? merged : out, injected: injected };
+        }
+
+        function grow() {
+            const canSplit = totalNodes() < params.maxNodes;
+            let injected = 0;
+            for (let li = 0; li < loops.length; li++) {
+                const r = resample(loops[li], canSplit);
+                loops[li] = r.loop;
+                injected += r.injected;
+            }
+            return injected > 0;
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // RENDER
+        // ═══════════════════════════════════════════════════════════════════════
+        function rgba(c, a) {
+            return 'rgba(' + Math.floor(red(c)) + ',' + Math.floor(green(c)) + ',' + Math.floor(blue(c)) + ',' + a + ')';
+        }
+        function paintBackground() {
+            blendMode(BLEND);
+            const bg = color(params.bg);
+            const lift = color(Math.min(255, red(bg) + 20), Math.min(255, green(bg) + 23), Math.min(255, blue(bg) + 34));
+            const g = drawingContext.createRadialGradient(width * 0.5, height * 0.42, 0, width * 0.5, height * 0.42, width * 0.92);
+            g.addColorStop(0, rgba(lift, 1));
+            g.addColorStop(1, rgba(bg, 1));
+            drawingContext.fillStyle = g;
+            drawingContext.fillRect(0, 0, width, height);
+        }
+        function paintVignette() {
+            blendMode(BLEND);
+            const bg = color(params.bg);
+            const dark = color(Math.max(0, red(bg) - 8), Math.max(0, green(bg) - 8), Math.max(0, blue(bg) - 6));
+            const g = drawingContext.createRadialGradient(width * 0.5, height * 0.46, width * 0.32, width * 0.5, height * 0.5, width * 0.8);
+            g.addColorStop(0, rgba(dark, 0));
+            g.addColorStop(1, rgba(dark, 0.6));
+            drawingContext.fillStyle = g;
+            drawingContext.fillRect(0, 0, width, height);
+        }
+
+        function render() {
+            paintBackground();
+            const lw = params.lineWeight;
+
+            // Soft glow underlay
+            blendMode(ADD);
+            for (let li = 0; li < loops.length; li++) {
+                const lp = loops[li]; const L = lp.length;
+                if (L < 2) continue;
+                strokeWeight(lw * 3.2);
+                for (let i = 0; i < L; i++) {
+                    const a = lp[i], b = lp[(i + 1) % L];
+                    const c = paletteColor(i / L);
+                    stroke(red(c), green(c), blue(c), 14);
+                    line(a.x, a.y, b.x, b.y);
+                }
+            }
+
+            // Crisp core, brightened at tight folds
+            for (let li = 0; li < loops.length; li++) {
+                const lp = loops[li]; const L = lp.length;
+                if (L < 2) continue;
+                strokeWeight(lw);
+                for (let i = 0; i < L; i++) {
+                    const prev = lp[(i - 1 + L) % L], a = lp[i], b = lp[(i + 1) % L];
+                    let ix = a.x - prev.x, iy = a.y - prev.y;
+                    let ox = b.x - a.x, oy = b.y - a.y;
+                    const il = Math.hypot(ix, iy) || 1, ol = Math.hypot(ox, oy) || 1;
+                    const cosA = (ix * ox + iy * oy) / (il * ol);
+                    const turn = Math.pow((1 - cosA) / 2, 0.7);
+                    const base = paletteColor(i / L);
+                    const lit = lerpColor(base, highlightCol, Math.min(0.85, turn * 0.85));
+                    stroke(red(lit), green(lit), blue(lit), 255 * (0.40 + 0.5 * turn));
+                    line(a.x, a.y, b.x, b.y);
+                }
+            }
+            blendMode(BLEND);
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // P5 LIFECYCLE
+        // ═══════════════════════════════════════════════════════════════════════
+        function setup() {
+            const canvas = createCanvas(1200, 1200);
+            canvas.parent('canvas-container');
+            pixelDensity(1);
+            const l = document.querySelector('.loading');
+            if (l) l.style.display = 'none';
+            initSystem();
+        }
+
+        function draw() {
+            if (done) return;
+            relax();
+            relax();
+            const grew = grow();
+            render();
+            if (!grew) {
+                settle++;
+                if (settle > 50) {
+                    paintVignette();
+                    done = true;
+                    noLoop();
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // UI
+        // ═══════════════════════════════════════════════════════════════════════
+        const INT_PARAMS = ['maxNodes', 'repRadius', 'blobs'];
+        function updateParam(name, value) {
+            params[name] = INT_PARAMS.indexOf(name) >= 0 ? parseInt(value) : parseFloat(value);
+            document.getElementById(name + '-value').textContent = value;
+            initSystem();
+        }
+        function updateColor(id, value) {
+            document.getElementById(id + '-value').textContent = value;
+            if (id === 'bg') params.bg = value;
+            else params.colorPalette[{ color1: 0, color2: 1, color3: 2 }[id]] = value;
+            initSystem();
+        }
+        function updateSeedDisplay() { document.getElementById('seed-input').value = params.seed; }
+        function updateSeed() {
+            const v = parseInt(document.getElementById('seed-input').value);
+            if (v && v > 0) { params.seed = v; initSystem(); } else updateSeedDisplay();
+        }
+        function previousSeed() { params.seed = Math.max(1, params.seed - 1); updateSeedDisplay(); initSystem(); }
+        function nextSeed() { params.seed = params.seed + 1; updateSeedDisplay(); initSystem(); }
+        function randomSeedAndUpdate() { params.seed = Math.floor(Math.random() * 999999) + 1; updateSeedDisplay(); initSystem(); }
+        function regenerate() { initSystem(); }
+        function downloadPNG() { saveCanvas('differential-growth-' + params.seed, 'png'); }
+        function resetParameters() {
+            params = JSON.parse(JSON.stringify(defaultParams));
+            ['maxNodes', 'repRadius', 'attraction', 'repulsion', 'smoothing', 'blobs', 'lineWeight'].forEach(function (k) {
+                document.getElementById(k).value = params[k];
+                document.getElementById(k + '-value').textContent = params[k];
+            });
+            document.getElementById('bg').value = params.bg;
+            document.getElementById('bg-value').textContent = params.bg;
+            ['color1', 'color2', 'color3'].forEach(function (id, i) {
+                document.getElementById(id).value = params.colorPalette[i];
+                document.getElementById(id + '-value').textContent = params.colorPalette[i];
+            });
+            updateSeedDisplay();
+            initSystem();
+        }
+        window.addEventListener('load', updateSeedDisplay);
+    </script>
+</body>
+</html>
