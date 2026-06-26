@@ -47,16 +47,21 @@ const published = works.filter((w) => w.status !== 'soon').length;
     </a>
   )}
 
+  {gridWorks.length > 0 && (
   <div class="section-label">
     <h2>Works</h2>
     <span class="count">{gridWorks.length} {gridWorks.length === 1 ? 'piece' : 'pieces'}</span>
   </div>
+  )}
 
+  {gridWorks.length > 0 && (
   <div class="chips">
     <button class="chip on" type="button" data-chip="all">All</button>
     {cats.map((c) => <button class="chip" type="button" data-chip={c}>{catLabel(c)}</button>)}
   </div>
+  )}
 
+  {gridWorks.length > 0 && (
   <div class="grid">
     {gridWorks.map((w) => {
       const isSoon = w.status === 'soon';
@@ -87,6 +92,7 @@ const published = works.filter((w) => w.status !== 'soon').length;
       );
     })}
   </div>
+  )}
 </main>
 
 <script>

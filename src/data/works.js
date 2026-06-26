@@ -42,40 +42,5 @@ export const works = [
     featured: true,
     live: true,
     blurb: 'Wind made visible — thousands of filaments surrendering to a divergence-free harmonic field. Reseed it, or set it flowing.'
-  },
-
-  // ── Example placeholders — replace or delete as you publish real pieces ──
-  {
-    id: 'murmuration',
-    title: 'Murmuration',
-    year: 2024,
-    medium: 'Particle system',
-    category: 'particles',
-    tags: ['p5.js', 'flocking'],
-    kind: 'particles',
-    status: 'soon',
-    blurb: 'Boids settling into restless, breathing clouds.'
-  },
-  {
-    id: 'standing-waves',
-    title: 'Standing Waves',
-    year: 2024,
-    medium: 'Harmonic',
-    category: 'harmonic',
-    tags: ['p5.js', 'interference'],
-    kind: 'harmonics',
-    status: 'soon',
-    blurb: 'Overlapping ripples carving nodes of stillness.'
-  },
-  {
-    id: 'lattice-hours',
-    title: 'Lattice Hours',
-    year: 2024,
-    medium: 'Tessellation',
-    category: 'tess',
-    tags: ['p5.js', 'voronoi'],
-    kind: 'lattice',
-    status: 'soon',
-    blurb: 'A plane fractured into drifting cells.'
   }
 ];
